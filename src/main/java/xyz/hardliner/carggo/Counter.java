@@ -1,5 +1,7 @@
 package xyz.hardliner.carggo;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import xyz.hardliner.carggo.domain.Cell;
 import xyz.hardliner.carggo.domain.World;
 
@@ -29,7 +31,7 @@ public class Counter {
 				for (int j = 1; j < xSize + 1; j++) {
 					String value = worldLine.substring(j - 1, j);
 					if (value.equals(LAND)) {
-						world.getCells().put(new Cell(j, i), true);
+						world.getCells().put(new Cell(j, i), 1);
 					} else if (!value.equals(WATER)) {
 						throw new IllegalArgumentException("Wrong map symbol");
 					}
@@ -42,53 +44,58 @@ public class Counter {
 
 	private static int countIslands(World world) {
 		int islandCounter = 0;
-		Set<Cell> visitedIslands = new HashSet<>();
-		Map<Cell, Boolean> cells = world.getCells();
-		for (Cell cell : world.getCells().keySet()) {
-			if (!cells.get(cell)) {
-				continue;
-			}
-			if (visitedIslands.contains(cell)) {
-				continue;
-			}
-			islandCounter++;
-			Set<Cell> currentIsland = new HashSet<>();
-			checkAllLandsOfCurrentIsland(world, currentIsland, cell);
-			visitedIslands.addAll(currentIsland);
-		}
-		return islandCounter;
-	}
+		Map<Cell, Integer> cells = world.getCells();
+		Set<Pair<Integer, Integer>> merges = new HashSet<>(); // Same islands with different zone numbers.
 
-	private static void checkAllLandsOfCurrentIsland(World world, Set<Cell> currentIsland, Cell cell) {
-		currentIsland.add(cell);
+		//                 0
+		// Scanning using 00 mask.
 
-		if (cell.getY() > 1) {
-			Cell upperCell = new Cell(cell.getX(), cell.getY() - 1);
-			if (!currentIsland.contains(upperCell) && world.getCells().get(upperCell)) {
-				checkAllLandsOfCurrentIsland(world, currentIsland, upperCell);
+		for (int j = 1; j < world.getYSize() + 1; j++) {
+			for (int i = 1; i < world.getXSize() + 1; i++) {
+				Integer currentCellIsland = cells.get(new Cell(i, j));
+				Integer upperCellIsland = j == 1 ? 0 : cells.get(new Cell(i, j - 1));
+				Integer leftCellIsland = i == 1 ? 0 : cells.get(new Cell(i - 1, j));
+
+				//  ?     ?
+				// ?0 -> ?0
+				if (currentCellIsland == 0) {
+					continue;
+				}
+
+				//  0     0
+				// 01 -> 0n
+				if (upperCellIsland == 0 && leftCellIsland == 0) {
+					islandCounter++;
+					cells.put(new Cell(i, j), islandCounter);
+					continue;
+				}
+
+				//  0     0
+				// n1 -> nn
+				if (upperCellIsland == 0) {
+					cells.put(new Cell(i, j), leftCellIsland);
+					continue;
+				}
+
+				//  n     n
+				// 01 -> 0n
+				if (leftCellIsland == 0) {
+					cells.put(new Cell(i, j), upperCellIsland);
+					continue;
+				}
+
+				//  m     m
+				// n1 -> nm
+				// Conflict case. Recording merging lands.
+				cells.put(new Cell(i, j), upperCellIsland);
+				if (!leftCellIsland.equals(upperCellIsland)) {
+					merges.add(new ImmutablePair<>(leftCellIsland, upperCellIsland));
+				}
+
 			}
 		}
 
-		if (cell.getY() < world.getYSize()) {
-			Cell lowerCell = new Cell(cell.getX(), cell.getY() + 1);
-			if (!currentIsland.contains(lowerCell) && world.getCells().get(lowerCell)) {
-				checkAllLandsOfCurrentIsland(world, currentIsland, lowerCell);
-			}
-		}
-
-		if (cell.getX() > 1) {
-			Cell leftCell = new Cell(cell.getX() - 1, cell.getY());
-			if (!currentIsland.contains(leftCell) && world.getCells().get(leftCell)) {
-				checkAllLandsOfCurrentIsland(world, currentIsland, leftCell);
-			}
-		}
-
-		if (cell.getX() < world.getXSize()) {
-			Cell rightCell = new Cell(cell.getX() + 1, cell.getY());
-			if (!currentIsland.contains(rightCell) && world.getCells().get(rightCell)) {
-				checkAllLandsOfCurrentIsland(world, currentIsland, rightCell);
-			}
-		}
+		return islandCounter - merges.size();
 	}
 
 }
