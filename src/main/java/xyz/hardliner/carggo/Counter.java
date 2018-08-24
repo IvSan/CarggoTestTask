@@ -52,19 +52,19 @@ public class Counter {
 
 		for (int j = 1; j < world.getYSize() + 1; j++) {
 			for (int i = 1; i < world.getXSize() + 1; i++) {
-				Integer currentCellIsland = cells.get(new Cell(i, j));
-				Integer upperCellIsland = j == 1 ? 0 : cells.get(new Cell(i, j - 1));
-				Integer leftCellIsland = i == 1 ? 0 : cells.get(new Cell(i - 1, j));
+				Integer currentCell = cells.get(new Cell(i, j));
+				Integer upperCell = j == 1 ? 0 : cells.get(new Cell(i, j - 1));
+				Integer leftCell = i == 1 ? 0 : cells.get(new Cell(i - 1, j));
 
 				//  ?     ?
 				// ?0 -> ?0
-				if (currentCellIsland == 0) {
+				if (currentCell == 0) {
 					continue;
 				}
 
 				//  0     0
 				// 01 -> 0n
-				if (upperCellIsland == 0 && leftCellIsland == 0) {
+				if (upperCell == 0 && leftCell == 0) {
 					islandCounter++;
 					cells.put(new Cell(i, j), islandCounter);
 					continue;
@@ -72,24 +72,24 @@ public class Counter {
 
 				//  0     0
 				// n1 -> nn
-				if (upperCellIsland == 0) {
-					cells.put(new Cell(i, j), leftCellIsland);
+				if (upperCell == 0) {
+					cells.put(new Cell(i, j), leftCell);
 					continue;
 				}
 
 				//  n     n
 				// 01 -> 0n
-				if (leftCellIsland == 0) {
-					cells.put(new Cell(i, j), upperCellIsland);
+				if (leftCell == 0) {
+					cells.put(new Cell(i, j), upperCell);
 					continue;
 				}
 
 				//  m     m
 				// n1 -> nm
 				// Conflict case. Recording merging lands.
-				cells.put(new Cell(i, j), upperCellIsland);
-				if (!leftCellIsland.equals(upperCellIsland)) {
-					merges.add(new ImmutablePair<>(leftCellIsland, upperCellIsland));
+				cells.put(new Cell(i, j), upperCell);
+				if (!leftCell.equals(upperCell)) {
+					merges.add(new ImmutablePair<>(leftCell, upperCell));
 				}
 
 			}
